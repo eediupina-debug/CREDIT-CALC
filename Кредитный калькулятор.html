@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Кредитный калькулятор — расчёт аннуитетного платежа</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230b1220'/%3E%3Cpath d='M8 22V10h6a5 5 0 0 1 0 10H8m14 2V10' stroke='%2338bdf8' stroke-width='2.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#070b14;
+  --surface:#0e1524;
+  --surface-2:#131c2e;
+  --line:rgba(148,163,184,.16);
+  --text:#e8eefc;
+  --muted:#8ea0bf;
+  --accent:#38bdf8;
+  --accent-2:#818cf8;
+  --accent-3:#22d3ee;
+  --ok:#34d399;
+  --warn:#fbbf24;
+  --radius:20px;
+  --shadow:0 24px 60px -24px rgba(3,7,18,.9);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--text);
+  font-family:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;
+  background-image:
+    radial-gradient(900px 500px at 12% -10%,rgba(56,189,248,.18),transparent 60%),
+    radial-gradient(700px 480px at 92% 4%,rgba(129,140,248,.16),transparent 60%);
+  background-repeat:no-repeat;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:32px 20px 72px}
+
+/* ---------- header ---------- */
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:48px}
+.brand{display:flex;align-items:center;gap:12px;font-weight:700;letter-spacing:-.01em}
+.brand svg{color:var(--accent)}
+.badge{
+  font-size:12px;font-weight:600;color:var(--muted);border:1px solid var(--line);
+  padding:7px 14px;border-radius:999px;background:rgba(255,255,255,.03);white-space:nowrap;
+}
+.hero{max-width:760px;margin-bottom:40px}
+.eyebrow{
+  display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.14em;color:var(--accent-3);margin-bottom:18px;
+}
+.eyebrow::before{content:"";width:26px;height:1px;background:currentColor;opacity:.7}
+h1{
+  font-size:clamp(2.1rem,6vw,4rem);line-height:1.03;font-weight:800;letter-spacing:-.035em;margin:0 0 18px;
+  background:linear-gradient(103deg,#ffffff 4%,#bfe4ff 38%,#8ab4ff 62%,rgba(129,140,248,.45) 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;
+}
+.hero p{color:var(--muted);font-size:clamp(1rem,2.2vw,1.12rem);margin:0;max-width:56ch}
+
+/* ---------- layout ---------- */
+.grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:22px;align-items:start}
+.card{
+  background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.012));
+  border:1px solid var(--line);border-radius:var(--radius);padding:26px;box-shadow:var(--shadow);
+  backdrop-filter:blur(6px);
+}
+.card h2{font-size:1.05rem;font-weight:700;letter-spacing:-.01em;margin:0 0 22px;display:flex;align-items:center;gap:10px}
+.card h2 .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px rgba(56,189,248,.16)}
+
+/* ---------- fields ---------- */
+.field{padding:18px 0;border-top:1px solid var(--line)}
+.field:first-of-type{border-top:0;padding-top:0}
+.field-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px}
+.field-head label{font-size:.9rem;font-weight:600;color:var(--muted)}
+.value-box{display:flex;align-items:center;gap:2px}
+.value-box input{
+  width:auto;min-width:64px;max-width:190px;field-sizing:content;
+  background:transparent;border:0;border-bottom:1px dashed rgba(148,163,184,.35);
+  color:var(--text);font:inherit;font-size:1.28rem;font-weight:700;letter-spacing:-.02em;
+  text-align:right;padding:2px 2px 3px;outline:none;
+}
+.value-box input:focus{border-bottom-color:var(--accent);color:#fff}
+.unit{font-size:1rem;font-weight:600;color:var(--muted);padding-left:4px}
+
+/* stepper + slider row */
+.control{display:flex;align-items:center;gap:12px}
+.step{
+  flex:0 0 38px;height:38px;border-radius:12px;border:1px solid var(--line);
+  background:var(--surface-2);color:var(--text);font-size:1.15rem;font-weight:700;line-height:1;
+  cursor:pointer;transition:.18s ease;display:grid;place-items:center;
+}
+.step:hover{border-color:rgba(56,189,248,.6);background:rgba(56,189,248,.12);color:#fff;transform:translateY(-1px)}
+.step:active{transform:translateY(0) scale(.96)}
+input[type=range]{
+  -webkit-appearance:none;appearance:none;flex:1;height:6px;border-radius:999px;outline:none;
+  background:linear-gradient(90deg,var(--accent) 0%,var(--accent-2) var(--p,40%),rgba(148,163,184,.2) var(--p,40%));
+  cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;
+  border:5px solid var(--accent);box-shadow:0 4px 14px rgba(56,189,248,.45);cursor:grab;transition:transform .15s;
+}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.12)}
+input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#fff;border:5px solid var(--accent);box-shadow:0 4px 14px rgba(56,189,248,.45)}
+.scale{display:flex;justify-content:space-between;font-size:11px;color:#63748f;margin-top:8px;font-weight:600}
+
+/* ---------- results ---------- */
+.hl{
+  border-radius:16px;padding:22px 24px;margin-bottom:18px;position:relative;overflow:hidden;
+  background:linear-gradient(120deg,rgba(56,189,248,.20),rgba(129,140,248,.16) 60%,rgba(34,211,238,.10));
+  border:1px solid rgba(56,189,248,.34);
+}
+.hl span{display:block;font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#a9c8ea}
+.hl strong{display:block;font-size:clamp(1.9rem,5.4vw,2.6rem);font-weight:800;letter-spacing:-.035em;margin-top:6px;line-height:1.05}
+.hl strong i{font-style:normal;font-size:.44em;font-weight:700;color:#bcd6f2;margin-left:4px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:15px 16px}
+.stat span{display:block;font-size:.76rem;font-weight:600;color:var(--muted);margin-bottom:6px}
+.stat b{font-size:1.12rem;font-weight:700;letter-spacing:-.02em}
+.stat.saved b{color:var(--ok)}
+.stat.over b{color:var(--warn)}
+.chart-wrap{margin-top:20px;padding-top:20px;border-top:1px solid var(--line)}
+.chart-box{position:relative;height:230px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:16px;font-size:.83rem;color:var(--muted)}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:7px}
+
+/* ---------- schedule ---------- */
+.sched{margin-top:22px}
+.sched-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+.toggle{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px}
+.toggle button{
+  border:0;background:transparent;color:var(--muted);font:inherit;font-size:.83rem;font-weight:600;
+  padding:8px 15px;border-radius:9px;cursor:pointer;transition:.18s;
+}
+.toggle button[aria-selected=true]{background:linear-gradient(120deg,var(--accent),var(--accent-2));color:#06111f}
+.table-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:16px}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;min-width:620px}
+th,td{padding:13px 16px;text-align:right;font-size:.88rem;white-space:nowrap}
+th{
+  position:sticky;top:0;background:var(--surface-2);color:var(--muted);font-size:.74rem;font-weight:700;
+  text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid var(--line);
+}
+th:first-child,td:first-child{text-align:left}
+tbody tr{border-top:1px solid rgba(148,163,184,.09)}
+tbody tr:hover{background:rgba(56,189,248,.06)}
+td.pay{font-weight:700;color:#fff}
+td.int{color:#f0b3b3}
+td.prin{color:#9fe6c4}
+tr.year-row{background:rgba(129,140,248,.07)}
+tr.year-row td{font-weight:700;color:#fff}
+.foot{margin-top:26px;color:#63748f;font-size:.8rem;max-width:70ch}
+
+@media (max-width:920px){
+  .grid{grid-template-columns:1fr}
+}
+@media (max-width:560px){
+  .wrap{padding:22px 14px 56px}
+  .card{padding:20px 16px;border-radius:16px}
+  .stats{grid-template-columns:1fr}
+  .top{margin-bottom:32px}
+  .step{flex-basis:42px;height:42px}
+  .value-box input{font-size:1.15rem;max-width:150px}
+  th,td{padding:11px 12px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <svg width="30" height="30" viewBox="0 0 32 32" aria-label="Логотип Ставка" role="img">
+        <rect width="32" height="32" rx="9" fill="rgba(56,189,248,.12)" stroke="rgba(56,189,248,.5)"/>
+        <path d="M9 22V10h5.5a4.5 4.5 0 0 1 0 9H9M22 22V10" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+      </svg>
+      <span>Ставка</span>
+    </div>
+    <div class="badge">Аннуитетная схема · ЦБ РФ методика</div>
+  </header>
+
+  <section class="hero">
+    <div class="eyebrow">Кредитный калькулятор</div>
+    <h1>Считайте платёж, переплату и выгоду досрочного погашения</h1>
+    <p>Задайте параметры бегунками или введите значения вручную — расчёт, график и структура выплат обновляются мгновенно.</p>
+  </section>
+
+  <div class="grid">
+    <!-- inputs -->
+    <section class="card">
+      <h2><span class="dot"></span>Параметры кредита</h2>
+
+      <div class="field">
+        <div class="field-head">
+          <label for="amount">Сумма кредита</label>
+          <div class="value-box"><input id="amount" inputmode="numeric" value="3 000 000"><span class="unit">₽</span></div>
+        </div>
+        <div class="control">
+          <button class="step" data-dec="amount" aria-label="Уменьшить сумму">−</button>
+          <input type="range" id="amountR" min="100000" max="30000000" step="50000" value="3000000">
+          <button class="step" data-inc="amount" aria-label="Увеличить сумму">+</button>
+        </div>
+        <div class="scale"><span>100 000 ₽</span><span>30 000 000 ₽</span></div>
+      </div>
+
+      <div class="field">
+        <div class="field-head">
+          <label for="term">Срок кредита</label>
+          <div class="value-box"><input id="term" inputmode="numeric" value="60"><span class="unit">мес.</span></div>
+        </div>
+        <div class="control">
+          <button class="step" data-dec="term" aria-label="Уменьшить срок">−</button>
+          <input type="range" id="termR" min="3" max="360" step="1" value="60">
+          <button class="step" data-inc="term" aria-label="Увеличить срок">+</button>
+        </div>
+        <div class="scale"><span>3 мес.</span><span id="termHint">5 лет</span><span>360 мес.</span></div>
+      </div>
+
+      <div class="field">
+        <div class="field-head">
+          <label for="rate">Процентная ставка</label>
+          <div class="value-box"><input id="rate" inputmode="decimal" value="18,5"><span class="unit">% год.</span></div>
+        </div>
+        <div class="control">
+          <button class="step" data-dec="rate" aria-label="Уменьшить ставку">−</button>
+          <input type="range" id="rateR" min="1" max="40" step="0.1" value="18.5">
+          <button class="step" data-inc="rate" aria-label="Увеличить ставку">+</button>
+        </div>
+        <div class="scale"><span>1 %</span><span>40 %</span></div>
+      </div>
+
+      <div class="field">
+        <div class="field-head">
+          <label for="extra">Досрочное погашение, ежемесячно</label>
+          <div class="value-box"><input id="extra" inputmode="numeric" value="0"><span class="unit">₽</span></div>
+        </div>
+        <div class="control">
+          <button class="step" data-dec="extra" aria-label="Уменьшить досрочный платёж">−</button>
+          <input type="range" id="extraR" min="0" max="200000" step="1000" value="0">
+          <button class="step" data-inc="extra" aria-label="Увеличить досрочный платёж">+</button>
+        </div>
+        <div class="scale"><span>0 ₽</span><span>200 000 ₽</span></div>
+      </div>
+    </section>
+
+    <!-- results -->
+    <section class="card">
+      <h2><span class="dot"></span>Результат расчёта</h2>
+
+      <div class="hl">
+        <span>Ежемесячный платёж</span>
+        <strong id="rPay">— <i>₽</i></strong>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><span>Всего выплат</span><b id="rTotal">—</b></div>
+        <div class="stat over"><span>Переплата по процентам</span><b id="rInterest">—</b></div>
+        <div class="stat"><span>Фактический срок</span><b id="rTerm">—</b></div>
+        <div class="stat saved"><span>Экономия на процентах</span><b id="rSaved">—</b></div>
+      </div>
+
+      <div class="chart-wrap">
+        <div class="chart-box"><canvas id="pie" aria-label="Структура выплат"></canvas></div>
+        <div class="legend">
+          <span><i style="background:#38bdf8"></i>Основной долг</span>
+          <span><i style="background:#f87171"></i>Проценты банку</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- schedule -->
+  <section class="card sched">
+    <div class="sched-head">
+      <h2 style="margin:0"><span class="dot"></span>График платежей</h2>
+      <div class="toggle" role="tablist">
+        <button role="tab" aria-selected="true" data-view="month">По месяцам</button>
+        <button role="tab" aria-selected="false" data-view="year">По годам</button>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead><tr>
+          <th id="thPeriod">Месяц</th><th>Платёж</th><th>Проценты</th><th>Основной долг</th><th>Остаток</th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <p class="foot">Расчёт справочный: аннуитетный платёж по стандартной формуле, досрочные взносы уменьшают срок кредита. Фактические условия банка могут включать страхование и комиссии.</p>
+  </section>
+</div>
+
+<script>
+const nf = n => Math.round(n).toLocaleString('ru-RU').replace(/\u00A0/g,' ');
+const money = n => nf(n) + ' ₽';
+const parse = s => parseFloat(String(s).replace(/\s/g,'').replace(',','.')) || 0;
+
+const F = {
+  amount:{i:document.getElementById('amount'), r:document.getElementById('amountR'), dec:0},
+  term:  {i:document.getElementById('term'),   r:document.getElementById('termR'),   dec:0},
+  rate:  {i:document.getElementById('rate'),   r:document.getElementById('rateR'),   dec:1},
+  extra: {i:document.getElementById('extra'),  r:document.getElementById('extraR'),  dec:0},
+};
+
+function fmtField(k,v){
+  const f=F[k];
+  return f.dec ? v.toFixed(1).replace('.',',') : nf(v);
+}
+function paintRange(r){
+  const p=(r.value-r.min)/(r.max-r.min)*100;
+  r.style.setProperty('--p',p+'%');
+}
+function setVal(k,v,{fromInput=false}={}){
+  const f=F[k];
+  v=Math.min(+f.r.max,Math.max(+f.r.min,v));
+  v=f.dec?Math.round(v*10)/10:Math.round(v);
+  f.r.value=v; paintRange(f.r);
+  if(!fromInput) f.i.value=fmtField(k,v);
+  render();
+}
+
+Object.keys(F).forEach(k=>{
+  const f=F[k];
+  paintRange(f.r);
+  f.r.addEventListener('input',()=>setVal(k,+f.r.value));
+  f.i.addEventListener('input',()=>{
+    const v=parse(f.i.value);
+    if(v>=+f.r.min&&v<=+f.r.max){f.r.value=v;paintRange(f.r);render();}
+  });
+  f.i.addEventListener('blur',()=>setVal(k,parse(f.i.value)));
+  f.i.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();f.i.blur();}});
+});
+document.querySelectorAll('.step').forEach(b=>{
+  const k=b.dataset.inc||b.dataset.dec, sign=b.dataset.inc?1:-1;
+  b.addEventListener('click',()=>setVal(k,+F[k].r.value+sign*(+F[k].r.step)));
+});
+
+let view='month';
+document.querySelectorAll('.toggle button').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.toggle button').forEach(x=>x.setAttribute('aria-selected',x===b));
+    view=b.dataset.view;
+    document.getElementById('thPeriod').textContent = view==='month'?'Месяц':'Год';
+    render();
+  });
+});
+
+let chart;
+function drawChart(principal,interest){
+  const data=[principal,interest];
+  if(chart){chart.data.datasets[0].data=data;chart.update();return;}
+  chart=new Chart(document.getElementById('pie'),{
+    type:'doughnut',
+    data:{labels:['Основной долг','Проценты'],datasets:[{data,backgroundColor:['#38bdf8','#f87171'],borderColor:'#0e1524',borderWidth:3,hoverOffset:8}]},
+    options:{
+      cutout:'64%',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+money(c.parsed)+' · '+(c.parsed/(c.dataset.data[0]+c.dataset.data[1])*100).toFixed(1)+'%'},backgroundColor:'#0b1220',borderColor:'rgba(148,163,184,.25)',borderWidth:1,padding:12,titleFont:{family:'Manrope'},bodyFont:{family:'Manrope',size:13}}}
+    }
+  });
+}
+
+function render(){
+  const S=parse(F.amount.i.value)||+F.amount.r.value;
+  const N=Math.max(1,Math.round(+F.term.r.value));
+  const rate=+F.rate.r.value, extra=+F.extra.r.value;
+  const m=rate/100/12;
+  const pay = m>0 ? S*m*Math.pow(1+m,N)/(Math.pow(1+m,N)-1) : S/N;
+
+  F.term.i.value===undefined;
+  document.getElementById('termHint').textContent =
+    (N>=12? Math.floor(N/12)+' л. ' : '') + (N%12? (N%12)+' мес.' : '');
+
+  // schedule with prepayments
+  let bal=S, rows=[], interestSum=0, paidSum=0, i=0;
+  while(bal>0.5 && i<600){
+    const int=bal*m;
+    let prin=pay-int+extra;
+    if(prin>bal) prin=bal;
+    const total=int+prin;
+    bal-=prin; interestSum+=int; paidSum+=total; i++;
+    rows.push({n:i,pay:total,int,prin,bal:Math.max(bal,0)});
+  }
+  const baseInterest = pay*N - S;
+
+  document.getElementById('rPay').innerHTML = nf(pay+extra)+' <i>₽</i>';
+  document.getElementById('rTotal').textContent = money(paidSum);
+  document.getElementById('rInterest').textContent = money(interestSum);
+  const y=Math.floor(rows.length/12), mm=rows.length%12;
+  document.getElementById('rTerm').textContent = (y?y+' г. ':'')+(mm?mm+' мес.':'')||'—';
+  document.getElementById('rSaved').textContent = extra>0 ? money(Math.max(baseInterest-interestSum,0)) : '—';
+  drawChart(S,interestSum);
+
+  const tb=document.getElementById('tbody');
+  let html='';
+  if(view==='month'){
+    html=rows.map(r=>`<tr><td>${r.n}</td><td class="pay">${money(r.pay)}</td><td class="int">${money(r.int)}</td><td class="prin">${money(r.prin)}</td><td>${money(r.bal)}</td></tr>`).join('');
+  }else{
+    for(let s=0;s<rows.length;s+=12){
+      const c=rows.slice(s,s+12);
+      const sum=k=>c.reduce((a,b)=>a+b[k],0);
+      html+=`<tr class="year-row"><td>${s/12+1}-й год</td><td class="pay">${money(sum('pay'))}</td><td class="int">${money(sum('int'))}</td><td class="prin">${money(sum('prin'))}</td><td>${money(c[c.length-1].bal)}</td></tr>`;
+    }
+  }
+  tb.innerHTML=html;
+}
+render();
+</script>
+<script data-pplx-inline-edit>
+(function () {
+  if (window === window.top) return;
+
+  const allowedParentOrigins = ["https://www.perplexity.ai","https://perplexity.ai","https://testing.perplexity.ai","https://staging.perplexity.ai","https://*.preview.i.perplexity.ai","http://perplexity.localhost","http://localhost:1420","http://127.0.0.1:1420","http://localhost:3000","http://127.0.0.1:3000","http://localhost:5173","http://127.0.0.1:5173"];
+  const MAX_FONT_BYTES = 500 * 1024;
+  const MAX_TOTAL_FONT_BYTES = 2 * 1024 * 1024;
+  let scrollForwarding = false;
+  let scrollRaf = 0;
+  let trustedTopOrigin = null;
+
+  // Allow entries like "https://*.preview.i.perplexity.ai" — the wildcard
+  // matches a single DNS label (no dots), so "https://*.foo" cannot stretch
+  // across multiple labels.
+  function matchesAllowedOrigin(origin) {
+    if (!origin) return false;
+    for (const entry of allowedParentOrigins) {
+      if (!entry.includes("*")) {
+        if (entry === origin) return true;
+        continue;
+      }
+      const pattern = new RegExp(
+        "^" +
+          entry.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, "[^.]+") +
+          "$",
+      );
+      if (pattern.test(origin)) return true;
+    }
+    return false;
+  }
+
+  // Trust decision: when the sender is same-origin-visible (event.origin is a
+  // real origin like https://www.perplexity.ai) we trust event.origin directly.
+  // When event.origin is "null" (opaque broker srcdoc), we fall back to the
+  // broker's stamped `parentOrigin` to identify the top window. The fallback
+  // is claim-only — we rely on the browser's native `targetOrigin` enforcement
+  // on the response path (see postToTrustedTop) to ensure replies can't be
+  // delivered to anyone but the actual top window of that claimed origin.
+  function getTrustedParentOrigin(event) {
+    const forwardedParentOrigin =
+      typeof event.data.parentOrigin === "string" ? event.data.parentOrigin : null;
+    const parentOrigin = event.origin === "null" ? forwardedParentOrigin : event.origin;
+    return matchesAllowedOrigin(parentOrigin) ? parentOrigin : null;
+  }
+
+  // All responses go to window.top with targetOrigin = the allowlisted origin.
+  // An attacker that iframes us inside their own null-origin broker can claim
+  // any parentOrigin they like, but the browser will drop the reply whenever
+  // the real top's origin doesn't match — so the screenshot never leaves.
+  function postToTrustedTop(message) {
+    if (!trustedTopOrigin) return;
+    try {
+      window.top.postMessage(message, trustedTopOrigin);
+    } catch (_error) {}
+  }
+
+  function inlineAll(original, clone) {
+    if (original.nodeType !== 1 || clone.nodeType !== 1) return;
+
+    try {
+      const computedStyle = getComputedStyle(original);
+      // cssText on a computed style is the serialized declaration in modern
+      // Chromium/Safari — a single read beats enumerating ~400 longhand
+      // properties. Firefox returns "" here, so we fall back on empty.
+      const serialized = computedStyle.cssText;
+      if (serialized) {
+        clone.style.cssText = serialized;
+      } else {
+        const parts = new Array(computedStyle.length);
+        for (let index = 0; index < computedStyle.length; index += 1) {
+          const property = computedStyle[index];
+          parts[index] = `${property}:${computedStyle.getPropertyValue(property)};`;
+        }
+        clone.style.cssText = parts.join("");
+      }
+    } catch (_error) {}
+
+    const originalChildren = original.children;
+    const clonedChildren = clone.children;
+    for (
+      let index = 0;
+      index < originalChildren.length && index < clonedChildren.length;
+      index += 1
+    ) {
+      inlineAll(originalChildren[index], clonedChildren[index]);
+    }
+  }
+
+  function extractFontUrl(srcValue) {
+    const matches = [
+      ...srcValue.matchAll(
+        /url\(["']?([^"')]+)["']?\)(?:\s*format\(["']?([^"')]+)["']?\))?/gi,
+      ),
+    ];
+    if (matches.length === 0) return null;
+    const woff2 = matches.find((m) => m[2] && m[2].toLowerCase().includes("woff2"));
+    if (woff2) return woff2[1];
+    const woff = matches.find((m) => m[2] && m[2].toLowerCase().includes("woff"));
+    if (woff) return woff[1];
+    return matches[0][1];
+  }
+
+  // Cache resolved font URL -> data URI across captures. Fonts on a page
+  // essentially never change, and a batch run emits multiple captures back to
+  // back — without this we'd refetch + re-base64 every time.
+  const fontDataUriCache = new Map();
+  const SRC_DECLARATION_RE = /src\s*:\s*[^;}]+/i;
+
+  async function fetchAsDataUri(url) {
+    if (fontDataUriCache.has(url)) return fontDataUriCache.get(url);
+    let dataUri = null;
+    try {
+      const response = await fetch(url, { mode: "cors", credentials: "omit" });
+      if (response.ok) {
+        const blob = await response.blob();
+        if (blob.size <= MAX_FONT_BYTES) {
+          dataUri = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () =>
+              resolve(typeof reader.result === "string" ? reader.result : null);
+            reader.onerror = () => resolve(null);
+            reader.readAsDataURL(blob);
+          });
+        }
+      }
+    } catch (_error) {
+      dataUri = null;
+    }
+    fontDataUriCache.set(url, dataUri);
+    return dataUri;
+  }
+
+  function collectFontFaceRuleTexts() {
+    const rules = [];
+    for (const sheet of document.styleSheets) {
+      let cssRules;
+      try {
+        cssRules = sheet.cssRules;
+      } catch (_error) {
+        continue;
+      }
+      if (!cssRules) continue;
+      for (const rule of cssRules) {
+        const cssText = rule.cssText || "";
+        if (cssText.startsWith("@font-face")) rules.push(cssText);
+      }
+    }
+    return rules;
+  }
+
+  async function buildInlinedFontCss() {
+    const ruleTexts = collectFontFaceRuleTexts();
+    if (ruleTexts.length === 0) return null;
+
+    const resolved = ruleTexts.map((cssText) => {
+      if (!SRC_DECLARATION_RE.test(cssText)) return null;
+      const srcMatch = cssText.match(/src\s*:\s*([^;}]+)[;}]/i);
+      if (!srcMatch) return null;
+      const url = extractFontUrl(srcMatch[1]);
+      if (!url) return null;
+      try {
+        return { cssText, url: new URL(url, document.baseURI).href };
+      } catch (_error) {
+        return null;
+      }
+    });
+
+    const dataUris = await Promise.all(
+      resolved.map((entry) => (entry ? fetchAsDataUri(entry.url) : Promise.resolve(null))),
+    );
+
+    const inlined = [];
+    let totalBytes = 0;
+    for (let index = 0; index < resolved.length; index += 1) {
+      const entry = resolved[index];
+      const dataUri = dataUris[index];
+      if (!entry || !dataUri) continue;
+      const approxBytes = dataUri.length * 0.75;
+      if (totalBytes + approxBytes > MAX_TOTAL_FONT_BYTES) break;
+      totalBytes += approxBytes;
+      inlined.push(entry.cssText.replace(SRC_DECLARATION_RE, `src: url("${dataUri}")`));
+    }
+    return inlined.length > 0 ? inlined.join("\n") : null;
+  }
+
+  function stripExternal(clone) {
+    const images = clone.querySelectorAll("img");
+    for (let index = 0; index < images.length; index += 1) {
+      const src = images[index].getAttribute("src");
+      if (src && !src.startsWith("data:")) images[index].removeAttribute("src");
+    }
+
+    const elements = clone.querySelectorAll("*");
+    for (let index = 0; index < elements.length; index += 1) {
+      const style = elements[index].style.cssText;
+      if (style && style.includes("url(")) {
+        elements[index].style.cssText = style.replace(
+          /url\(["']?(?!data:)[^)"']*["']?\)/gi,
+          "none",
+        );
+      }
+    }
+  }
+
+  function emitScroll() {
+    scrollRaf = 0;
+    if (!scrollForwarding) return;
+    postToTrustedTop({
+      type: "INLINE_EDIT_SCROLL",
+      scrollX: window.scrollX,
+      scrollY: window.scrollY,
+    });
+  }
+
+  window.addEventListener(
+    "scroll",
+    function () {
+      if (!scrollForwarding || scrollRaf) return;
+      scrollRaf = requestAnimationFrame(emitScroll);
+    },
+    { passive: true, capture: true },
+  );
+
+  async function handleCaptureRequest(event) {
+    const requestId = event.data.requestId;
+    const scrollX = window.scrollX;
+    const scrollY = window.scrollY;
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    function postResult(dataUrl) {
+      postToTrustedTop({
+        type: "INLINE_EDIT_SCREENSHOT_RESULT",
+        requestId,
+        dataUrl,
+        scrollX,
+        scrollY,
+      });
+    }
+
+    try {
+      // Wait for any pending web fonts to resolve so both inline metrics and
+      // the @font-face inlining below see the same loaded faces.
+      if (document.fonts && document.fonts.ready) {
+        try {
+          await document.fonts.ready;
+        } catch (_error) {}
+      }
+
+      const clone = document.documentElement.cloneNode(true);
+      inlineAll(document.documentElement, clone);
+
+      const removedNodes = clone.querySelectorAll("script,link[rel=\"stylesheet\"],style");
+      for (let index = 0; index < removedNodes.length; index += 1) {
+        removedNodes[index].remove();
+      }
+
+      stripExternal(clone);
+
+      // Re-embed web fonts as data-URI @font-face rules so the SVG rasterizer
+      // can resolve them — external font URLs aren't fetched during
+      // foreignObject rendering, which would otherwise force a fallback face
+      // and change text metrics.
+      const inlinedFontCss = await buildInlinedFontCss();
+      if (inlinedFontCss) {
+        const styleEl = document.createElement("style");
+        styleEl.textContent = inlinedFontCss;
+        const head = clone.querySelector("head");
+        if (head) head.appendChild(styleEl);
+        else clone.insertBefore(styleEl, clone.firstChild);
+      }
+
+      const html = new XMLSerializer().serializeToString(clone);
+      const svg =
+        `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">` +
+        '<foreignObject width="100%" height="100%">' +
+        `<div xmlns="http://www.w3.org/1999/xhtml" style="width:${width}px;height:${height}px;overflow:hidden">` +
+        `<div style="position:relative;left:-${scrollX}px;top:-${scrollY}px">` +
+        html +
+        "</div></div></foreignObject></svg>";
+      const svgUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+      const image = new Image();
+      image.onload = function () {
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d").drawImage(image, 0, 0);
+        postResult(canvas.toDataURL("image/png"));
+      };
+      image.onerror = function () {
+        postResult(null);
+      };
+      image.src = svgUrl;
+    } catch (_error) {
+      postResult(null);
+    }
+  }
+
+  window.addEventListener("message", function (event) {
+    if (!event.data) return;
+    // Only accept messages from the direct parent frame. Blocks sibling /
+    // unrelated-window postMessage senders that could otherwise reach us.
+    if (event.source !== window.parent) return;
+
+    const trustedParentOrigin = getTrustedParentOrigin(event);
+    if (!trustedParentOrigin) return;
+    trustedTopOrigin = trustedParentOrigin;
+
+    if (event.data.type === "INLINE_EDIT_SCROLL_START") {
+      scrollForwarding = true;
+      emitScroll();
+      return;
+    }
+
+    if (event.data.type === "INLINE_EDIT_SCROLL_STOP") {
+      scrollForwarding = false;
+      if (scrollRaf) cancelAnimationFrame(scrollRaf);
+      scrollRaf = 0;
+      return;
+    }
+
+    if (event.data.type !== "INLINE_EDIT_CAPTURE_REQUEST") return;
+
+    handleCaptureRequest(event);
+  });
+})();
+
+
+</script></body>
+</html>
